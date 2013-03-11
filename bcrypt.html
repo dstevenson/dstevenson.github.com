@@ -17,11 +17,132 @@
             <tbody>
                 <tr>
                     <td class="docs">
-                        <h1>BCrypt</h1>                    
+                        <h1>BCrypt</h1>
+
+                        <p>
+                            A guide to converting MD5 style hashed passwords to BCrypt.
+                        </p>
+
+                        <h2>
+                            Migrating your old passwords
+                        </h2>
+
+                        <ol>
+                            <li>
+                                <p>
+                                    Convert your old MD5 style passwords to be stored with our new hash function. In my example I am using PostgreSQL 9.1.
+                                </p>
+
+                                <pre>
+<b>CREATE</b> EXTENSION IF <b>NOT EXISTS</b> pgcrypto;
+<b>UPDATE</b> TABLE_NAME <b>SET</b> MD5_PASSWORD_COLUMN = crypt(MD5_PASSWORD_COLUMN, gen_salt('bf'));
+                                </pre>
+
+                                <p>
+                                    We do this so we no longer have any passwords in our database stored as MD5
+                                </p>
+                            </li>
+                            <li>
+                                <p>
+                                    New Login Process
+                                </p>
+
+                                <ol>
+                                    <li>
+                                        <p>
+                                            When the customer logs in, attempt to login user with migration hash. This involves performing the old password hash procedure and finally performing the bcrypt
+                                        </p>
+
+                                        <pre>
+migration_hash = bcrypt(md5(password))
+                                        </pre>
+                                    </li>
+                                    <li>
+                                        <p>
+                                            If authentication via migration hash is successful:
+                                        </p>
+
+                                        <p>
+                                            - Use the user's provided password and calculate the New Hash.
+                                        </p>
+
+                                        <p>
+                                            - Overwrite the Migration Hash with the New Hash
+                                        </p>
+                                    </li>
+                                    <li>
+                                        <p>
+                                            If authentication via migration hash is NOT successful:
+                                        </p>
+
+                                        <p>
+                                            - The user may already be on the New Hash. Attempt to directly authenticate using the new hash. If this fails, then the password provided by the user is wrong.
+                                        </p>
+                                    </li>
+                                </ol>
+                            </li>
+                        </ol>
+
+                        <h2>
+                            MD5 Fun facts <sup><a href="#refs">1</a></sup>
+                        </h2>
+
+                        <ul>
+                            <li>
+                                A modern server can calculate the MD5 hash of about 330MB every second. If your users have passwords which are lowercase, alphanumeric, and 6 characters long, you can try every single possible password of that size in around 40 seconds.
+                            </li>                            
+                            <li>
+                                If you’re willing to spend about <a href="http://aws.amazon.com/ec2/#pricing">$2 an hour</a> and a week or two picking up <a href="http://www.nvidia.com/object/cuda_home.html">CUDA</a>, you can rent a supercomputer cluster which will let you try around a <b>billion</b> passwords a second. At that rate you’ll be cracking those passwords at the rate of more than one per second.
+                            </li>
+                            <li>
+                                Using a salt doesn’t affect how fast an attacker can try a candidate password, given the hash and the salt from your database.
+                            </li>
+                        </ul>
+
+                        <h3>
+                            How can I solve my problems?
+                        </h3>
+
+                        <p>
+                            <b>Don't use a hash function designed for speed to store your passwords.</b>
+                        </p>
+
+                        <h3>
+                            BCrypt
+                        </h3>
+                        
+                        <p>                        
+                            BCrypt uses a variant of the Blowfish encryption algorithm’s keying schedule, and introduces a work factor, which allows you to determine how expensive the hash function will be. Because of this, <b>bcrypt</b> can keep up with <a href="http://en.wikipedia.org/wiki/Moore's_law">Moore’s law</a>. As computers get faster you can increase the work factor and the hash will get slower.
+                        </p>
+
+                        <h3>
+                            How much faster?
+                        </h3>
+
+                        <p>
+                            On my development VM I can MD5 hash a password in about a <b>microsecond</b>.
+                        </p>
+
+                        <p>
+                            On the other hand, using bcrypt and a cost of 13, I can hash a password in about <b>.6 seconds</b>
+                        </p>
+
+                        <p>
+                            Instead of cracking a password every 40 seconds, I’d be cracking them every <b>12 years</b> or so.
+                        </p>
+                        <h2>
+                            <a name="refs">References</a>
+                        </h2>
+
+                        <ol>
+                            <li>        
+                                <a href="http://codahale.com/how-to-safely-store-a-password/">http://codahale.com/how-to-safely-store-a-password/</a>
+                            </li>
+                        </ol>
                     </td>
                 </tr>
             </tbody>
-        </table>    
+        </table>   
     </div>
 </body>
 </html>

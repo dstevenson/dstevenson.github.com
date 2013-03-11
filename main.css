@@ -75,6 +75,10 @@ td.docs, th.docs {
   font-size: 12px;
   padding: 0 0.2em;
 }
+
+.docs li {
+  padding: 5px;
+}
 .pilwrap {
   position: relative;
 }
